@@ -79,7 +79,7 @@ pub extern "C" fn kernel_main() -> ! {
 
     uart::Uart::new(0x1000_0000).init();
 
-    println!("Hello, tos!");
+    println!("Hello, tOS!");
 
     abort()
 }
