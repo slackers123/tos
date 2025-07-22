@@ -1,11 +1,9 @@
 #![no_std]
 #![no_main]
 
-use core::{
-    arch::{asm, naked_asm},
-    fmt::Write,
-};
+use core::arch::{asm, naked_asm};
 
+pub mod alloc;
 pub mod uart;
 
 unsafe extern "C" {
@@ -32,6 +30,7 @@ pub unsafe fn memset(buf: *mut u8, c: u8, n: usize) -> *mut u8 {
     return buf;
 }
 
+#[macro_export]
 macro_rules! print
 {
 	($($args:tt)+) => ({
@@ -40,16 +39,17 @@ macro_rules! print
 	});
 }
 
+#[macro_export]
 macro_rules! println
 {
 	() => ({
-		print!("\r\n")
+		crate::print!("\r\n")
 	});
 	($fmt:expr) => ({
-		print!(concat!($fmt, "\r\n"))
+		crate::print!(concat!($fmt, "\r\n"))
 	});
 	($fmt:expr, $($args:tt)+) => ({
-		print!(concat!($fmt, "\r\n"), $($args)+)
+		crate::print!(concat!($fmt, "\r\n"), $($args)+)
 	});
 }
 
@@ -78,8 +78,18 @@ pub extern "C" fn kernel_main() -> ! {
     unsafe { memset(__bss, 0, __bss_end as usize - __bss as usize) };
 
     uart::Uart::new(0x1000_0000).init();
+    alloc::init();
 
     println!("Hello, tOS!");
+    unsafe {
+        alloc::alloc(10);
+        alloc::alloc(1);
+        alloc::alloc(1);
+        let ptr = alloc::zalloc(4);
+        alloc::dealloc(ptr);
+    }
+
+    alloc::print_page_allocations();
 
     abort()
 }
