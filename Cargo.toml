@@ -1,0 +1,11 @@
+[package]
+name = "tos"
+version = "0.1.0"
+edition = "2024"
+
+panic = "abort"
+
+# [lib]
+# crate-type = ["staticlib"]
+
+[dependencies]
