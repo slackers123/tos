@@ -1,5 +1,9 @@
 use core::fmt::Write;
 
+pub fn init() {
+    Uart::new(0x1000_0000).init();
+}
+
 pub struct Uart {
     base_addr: usize,
 }

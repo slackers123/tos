@@ -12,9 +12,8 @@ HEAP_SIZE: .dword __heap_size"
 );
 
 unsafe extern "C" {
-    static HEAP_START: usize;
-    static HEAP_SIZE: usize;
-
+    pub static HEAP_START: usize;
+    pub static HEAP_SIZE: usize;
 }
 
 static mut ALLOC_START: usize = 0;
@@ -77,7 +76,7 @@ pub fn init() {
     }
 }
 
-pub unsafe fn alloc(pages: usize) -> *mut u8 {
+pub fn alloc(pages: usize) -> *mut u8 {
     assert!(pages > 0);
 
     unsafe {
@@ -111,7 +110,7 @@ pub unsafe fn alloc(pages: usize) -> *mut u8 {
     null_mut()
 }
 
-pub unsafe fn zalloc(pages: usize) -> *mut u8 {
+pub fn zalloc(pages: usize) -> *mut u8 {
     let ret = alloc(pages);
 
     if !ret.is_null() {
@@ -126,7 +125,7 @@ pub unsafe fn zalloc(pages: usize) -> *mut u8 {
     ret
 }
 
-pub unsafe fn dealloc(ptr: *mut u8) {
+pub fn dealloc(ptr: *mut u8) {
     assert!(!ptr.is_null());
     unsafe {
         let addr = HEAP_START + (ptr as usize - ALLOC_START) / PAGE_SIZE;

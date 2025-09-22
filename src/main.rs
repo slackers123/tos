@@ -4,18 +4,30 @@
 use core::arch::{asm, naked_asm};
 
 pub mod alloc;
+pub mod kmem;
+pub mod page;
+pub mod sbi;
 pub mod uart;
 
 unsafe extern "C" {
-    static __bss: *mut u8;
+    static __bss_start: *mut u8;
     static __bss_end: *mut u8;
-    static __stack_top: *mut u8;
+    static __stack_end: *mut u8;
 }
 
 #[unsafe(naked)]
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn boot() {
-    naked_asm!("la t0, __stack_top; mv sp, t0; j kernel_main");
+    naked_asm!(
+        ".option push;
+        .option norelax;
+        la gp, __global_pointer;
+        .option pop;
+
+        la t0, __stack_end;
+        mv sp, t0;
+        j kernel_main"
+    );
 }
 
 pub unsafe fn memset(buf: *mut u8, c: u8, n: usize) -> *mut u8 {
@@ -75,19 +87,24 @@ extern "C" fn abort() -> ! {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn kernel_main() -> ! {
-    unsafe { memset(__bss, 0, __bss_end as usize - __bss as usize) };
+    // make sure only hw thread 0 is running
 
-    uart::Uart::new(0x1000_0000).init();
+    unsafe { memset(__bss_start, 0, __bss_end as usize - __bss_start as usize) };
+
     alloc::init();
+    kmem::init();
+    uart::init();
+
+    let version = sbi::base::get_spec_version().unwrap();
 
     println!("Hello, tOS!");
-    unsafe {
-        alloc::alloc(10);
-        alloc::alloc(1);
-        alloc::alloc(1);
-        let ptr = alloc::zalloc(4);
-        alloc::dealloc(ptr);
-    }
+
+    println!("SBI spec version: {}.{}", version.0, version.1);
+    alloc::alloc(10);
+    alloc::alloc(1);
+    alloc::alloc(1);
+    let ptr = alloc::zalloc(4);
+    alloc::dealloc(ptr);
 
     alloc::print_page_allocations();
 
